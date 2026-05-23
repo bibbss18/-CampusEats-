@@ -1,21 +1,18 @@
 import express from 'express';
-import bcrypt from 'bcryptjs';
 import { sequelize } from '../database/db.js';
 import { User, StudentProfile } from '../models/index.js';
 
 const router = express.Router();
 
-// 1. POST: Register (Include TRANZACȚIE - 1p Barem)
+// 1. POST: Register
 router.post('/register', async (req, res) => {
     const { email, password, role, fullname, badge_number } = req.body;
     const t = await sequelize.transaction();
 
     try {
-        const hashedPassword = await bcrypt.hash(password, 10);
-        
         const newUser = await User.create({
             email,
-            password: hashedPassword,
+            password,
             role: role || 'student'
         }, { transaction: t });
 
@@ -40,7 +37,7 @@ router.post('/login', async (req, res) => {
     const { email, password } = req.body;
     try {
         const user = await User.findOne({ where: { email } });
-        if (!user || !(await bcrypt.compare(password, user.password))) {
+        if (!user || user.password !== password) {
             return res.status(401).json({ error: 'Date de autentificare invalide.' });
         }
         res.json({ id: user.id, email: user.email, role: user.role });
@@ -49,7 +46,7 @@ router.post('/login', async (req, res) => {
     }
 });
 
-// 3. GET: Toți utilizatorii (Bifează 5/5 GET total pe API)
+// 3. GET: Toți utilizatorii
 router.get('/users', async (req, res) => {
     try {
         const users = await User.findAll({ include: StudentProfile });
@@ -69,7 +66,7 @@ router.get('/profile/:id', async (req, res) => {
     }
 });
 
-// 5. PUT: Actualizare profil (Bifează 3/5 PUT total pe API)
+// 5. PUT: Actualizare profil
 router.put('/update/:id', async (req, res) => {
     try {
         const { fullname } = req.body;
