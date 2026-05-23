@@ -9,6 +9,9 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@capacitor/android": "^8.3.4",
+    "@capacitor/cli": "^8.3.4",
+    "@capacitor/core": "^8.3.4",
     "axios": "^1.6.0",
     "bootstrap-icons": "^1.13.1",
     "html5-qrcode": "^2.3.8",
