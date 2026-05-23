@@ -4,6 +4,12 @@ import { fileURLToPath, URL } from 'node:url'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    include: ['src/tests/**/*.test.js'],
+    pool: 'vmThreads'
+  },
   cacheDir: '/tmp/vite-cache',
   plugins: [
     vue(),
@@ -44,12 +50,10 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
     strictPort: true,
-
     hmr: {
       host: 'localhost',
       port: 5173
     },
-
     watch: {
       usePolling: true
     }
