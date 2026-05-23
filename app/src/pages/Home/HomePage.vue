@@ -70,7 +70,6 @@ import Navbar from '@/components/layout/Navbar.vue';
 import { useAuthStore } from "@/stores/auth";
 import { useRequestsStore } from '@/stores/requests';
 import { useCalendarStore } from '@/stores/calendar';
-import { supabase } from "@/lib/supabase.js";
 
 const auth = useAuthStore();
 const requestsStore = useRequestsStore();
@@ -80,47 +79,35 @@ const logs = ref([]);
 const donations = ref([]);
 const search = ref('');
 
-
 const filteredMeals = computed(() => {
   return donations.value.filter(m => m.meal_type.toLowerCase().includes(search.value.toLowerCase()))
 })
 
-
 const todayMealsCount = computed(() => filteredMeals.value.length)
-
-
 const hasAvailableMeals = computed(() => todayMealsCount.value > 0)
-
 
 const selectedDayName = computed(() => {
   return calendarStore.selectedDate.toLocaleDateString('ro-RO', { weekday: 'long' })
 })
-
 
 const isWeekend = computed(() => {
   const day = calendarStore.selectedDate.getDay()
   return day === 0 || day === 6
 })
 
-
-watch(() => calendarStore.selectedDate, (newDate) => {
-  console.log("S-a schimbat data, refacem fetch-ul...");
-  refreshAllData(); 
+watch(() => calendarStore.selectedDate, () => {
+  refreshAllData();
 })
-
 
 watch(search, (newVal) => {
   console.log(`Utilizatorul caută: ${newVal}`);
 })
-
 
 watch(todayMealsCount, (newCount) => {
   if (newCount === 0 && search.value !== '') {
     console.warn("Nu mai sunt mese disponibile pentru această căutare!");
   }
 })
-
-
 
 const offsetZile = computed(() => {
   const an = 2026;
@@ -165,30 +152,34 @@ const getMeseForDay = (dayIndex) => {
   else if (tip === 'pranz') baseMese = ['Prânz'];
 
   const claimedToday = donations.value
-    .filter(d => d.day_index === dayIndex && d.receiver_id === auth.user?.student_id)
+    .filter(d => d.day_index === dayIndex && d.receiver_id === auth.user?.id)
     .map(d => d.meal_type);
  
   return [...new Set([...baseMese, ...claimedToday])];
 };
 
 const refreshAllData = async () => {
-  if (!auth.user?.student_id) return;
-  const [logsRes, donsRes] = await Promise.all([
-    supabase.from('meal_logs').select('*').eq('student_id', auth.user.student_id),
-    supabase.from('donations').select('*')
-  ]);
-  if (logsRes.data) logs.value = logsRes.data;
-  if (donsRes.data) donations.value = donsRes.data;
+  if (!auth.user?.id) return;
+  try {
+    const [logsRes, donsRes] = await Promise.all([
+      fetch(`http://localhost:3000/api/meals/logs?user_id=${auth.user.id}`),
+      fetch('http://localhost:3000/api/donations')
+    ]);
+    if (logsRes.ok) logs.value = await logsRes.json();
+    if (donsRes.ok) donations.value = await donsRes.json();
+  } catch (err) {
+    console.error('Eroare refresh data:', err);
+  }
 };
 
 onMounted(() => {
   refreshAllData();
-  supabase.channel('calendar-live').on('postgres_changes', { event: '*', schema: 'public', table: 'donations' }, () => refreshAllData()).subscribe();
+  setInterval(refreshAllData, 10000);
 });
 
 const getStatus = (dayIndex, type) => {
   const typeClean = cleanText(type);
-  const me = auth.user.student_id;
+  const me = auth.user.id;
   const currentDayInGrid = dayIndex + 1;
   const todayDate = new Date().getDate();
 
@@ -197,11 +188,11 @@ const getStatus = (dayIndex, type) => {
 
   const asReceiver = donations.value.find(d => d.day_index === dayIndex && cleanText(d.meal_type) === typeClean && d.receiver_id === me);
   if (asReceiver) {
-    const scanned = logs.value.find(l => new Date(l.created_at).getDate() === currentDayInGrid && cleanText(l.meal_type) === typeClean);
+    const scanned = logs.value.find(l => new Date(l.createdAt).getDate() === currentDayInGrid && cleanText(l.meal_type) === typeClean);
     return scanned ? 'claimed_done' : 'claimed_pending';
   }
 
-  const hasEaten = logs.value.find(l => new Date(l.created_at).getDate() === currentDayInGrid && cleanText(l.meal_type) === typeClean);
+  const hasEaten = logs.value.find(l => new Date(l.createdAt).getDate() === currentDayInGrid && cleanText(l.meal_type) === typeClean);
   if (hasEaten) return 'consumed';
   if (currentDayInGrid < todayDate) return 'missed';
   return 'pending';

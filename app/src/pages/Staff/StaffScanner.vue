@@ -43,7 +43,6 @@
 import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { Html5QrcodeScanner } from "html5-qrcode";
-import { supabase } from "@/lib/supabase.js";
 
 const router = useRouter();
 const staffName = sessionStorage.getItem('staffName') || 'Angajat';
@@ -78,38 +77,22 @@ const onScanSuccess = async (decodedText) => {
   }
 
   try {
-    const todayIndex = new Date().getDate() - 1;
+    const response = await fetch('http://localhost:3000/api/meals/scan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        student_id: decodedText,
+        meal_type: currentMeal
+      })
+    });
 
-    
-    const { data: donation } = await supabase
-      .from('donations')
-      .select('*')
-      .eq('receiver_id', decodedText)
-      .eq('day_index', todayIndex)
-      .eq('meal_type', currentMeal)
-      .eq('status', 'claimed')
-      .maybeSingle();
+    const data = await response.json();
 
-    if (donation) {
-      await supabase.from('donations').update({ status: 'completed' }).eq('id', donation.id);
+    if (response.ok) {
+      showFeedback('success', 'Acces Confirmat', `Student: ${decodedText} \n Masă: ${currentMeal}`);
+    } else {
+      showFeedback('error', 'Eroare Scanare', data.error || 'Cod invalid.');
     }
-
-    
-    const { error } = await supabase.from('meal_logs').insert([{ 
-      student_id: decodedText, 
-      meal_type: currentMeal,
-      created_at: new Date().toISOString() 
-    }]);
-
-    if (error) throw error;
-
-
-    showFeedback(
-      'success', 
-      'Acces Confirmat', 
-      `Student: ${decodedText} \n Masă: ${currentMeal} ${donation ? '(REVENDICATĂ)' : ''}`
-    );
-
   } catch (err) {
     showFeedback('error', 'Eroare Scanare', 'Cod invalid sau problemă de conexiune.');
     console.error(err);
@@ -150,7 +133,6 @@ onUnmounted(() => {
 </script>
 
 <style>
-
 #reader {
   width: 100% !important;
   height: 100% !important;

@@ -16,7 +16,7 @@
           <div class="flex-1">
             <div class="flex justify-between items-start">
               <h3 class="text-[10px] font-black uppercase text-zinc-400 tracking-widest">Masa de {{ notif.meal_type }}</h3>
-              <span class="text-[9px] text-zinc-600 font-mono">{{ formatDate(notif.created_at) }}</span>
+              <span class="text-[9px] text-zinc-600 font-mono">{{ formatDate(notif.createdAt) }}</span>
             </div>
             <p class="text-sm mt-1">
               Studentul <span class="font-bold text-amber-500 italic">{{ notif.receiver_nume }}</span> a revendicat masa ta.
@@ -36,24 +36,21 @@
 import { ref, onMounted } from 'vue';
 import Navbar from '@/components/layout/Navbar.vue';
 import { useAuthStore } from "@/stores/auth";
-import { supabase } from "@/lib/supabase.js";
 
 const auth = useAuthStore();
 const notifications = ref([]);
 
 const fetchNotifications = async () => {
-  const { data } = await supabase
-    .from('donations')
-    .select(`*, receiver:Students!receiver_id(nume)`)
-    .eq('donor_id', auth.user.student_id)
-    .not('receiver_id', 'is', null)
-    .order('created_at', { ascending: false });
-
-  if (data) {
-    notifications.value = data.map(d => ({
-      ...d,
-      receiver_nume: d.receiver?.nume || 'Un student'
-    }));
+  try {
+    const res = await fetch(`http://localhost:3000/api/donations?donor_id=${auth.user.id}`);
+    if (res.ok) {
+      const data = await res.json();
+      notifications.value = data
+        .filter(d => d.receiver_id !== null)
+        .map(d => ({ ...d, receiver_nume: d.receiver_nume || 'Un student' }));
+    }
+  } catch (err) {
+    console.error('Eroare fetch notifications:', err);
   }
 };
 
@@ -61,6 +58,6 @@ const formatDate = (dateStr) => new Date(dateStr).toLocaleTimeString([], { hour:
 
 onMounted(() => {
   fetchNotifications();
-  supabase.channel('inbox-live').on('postgres_changes', { event: '*', schema: 'public', table: 'donations' }, () => fetchNotifications()).subscribe();
+  setInterval(fetchNotifications, 10000);
 });
 </script>
