@@ -4,7 +4,7 @@
     <main class="max-w-4xl mx-auto p-6">
       <header class="mb-10">
         <h1 class="text-3xl font-black italic text-amber-500 uppercase tracking-tighter">Inbox</h1>
-        <p class="text-zinc-500 text-xs mt-2 font-mono uppercase tracking-widest italic tracking-widest">Activitate și Mulțumiri</p>
+        <p class="text-zinc-500 text-xs mt-2 font-mono uppercase tracking-widest italic">Activitate și Mulțumiri</p>
       </header>
 
       <div class="space-y-4">
@@ -36,13 +36,14 @@
 import { ref, onMounted } from 'vue';
 import Navbar from '@/components/layout/Navbar.vue';
 import { useAuthStore } from "@/stores/auth";
+import { apiFetch } from '@/lib/api.js';
 
 const auth = useAuthStore();
 const notifications = ref([]);
 
 const fetchNotifications = async () => {
   try {
-    const res = await fetch(`http://localhost:3000/api/donations?donor_id=${auth.user.id}`);
+    const res = await apiFetch(`http://localhost:3000/api/donations?donor_id=${auth.user.id}`);
     if (res.ok) {
       const data = await res.json();
       notifications.value = data
@@ -64,5 +65,4 @@ onMounted(() => {
     if (data.type === 'DONATION_UPDATE') fetchNotifications();
   };
 });
-
 </script>

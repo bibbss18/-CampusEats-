@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { useUiStore } from './ui'
+import { apiFetch } from '@/lib/api.js'
 
 export const useRequestsStore = defineStore('requests', {
   state: () => ({
@@ -10,7 +11,7 @@ export const useRequestsStore = defineStore('requests', {
     async fetchRequests() {
       this.loading = true
       try {
-        const response = await fetch('http://localhost:3000/api/donations')
+        const response = await apiFetch('http://localhost:3000/api/donations')
         const data = await response.json()
         this.requests = data || []
       } catch (error) {
@@ -22,7 +23,7 @@ export const useRequestsStore = defineStore('requests', {
     async cancelRequest(requestId) {
       const uiStore = useUiStore()
       try {
-        const response = await fetch(`http://localhost:3000/api/donations/${requestId}`, {
+        const response = await apiFetch(`http://localhost:3000/api/donations/${requestId}`, {
           method: 'DELETE'
         })
         if (response.ok) {

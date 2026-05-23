@@ -3,12 +3,19 @@ import { defineStore } from 'pinia'
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: JSON.parse(localStorage.getItem('campus_eats_user')) || null,
+    token: localStorage.getItem('campus_eats_token') || null,
+    refreshToken: localStorage.getItem('campus_eats_refresh_token') || null,
   }),
   
   actions: {
     setUser(userData) {
-      this.user = userData
-      localStorage.setItem('campus_eats_user', JSON.stringify(userData))
+      const { token, refreshToken, ...user } = userData;
+      this.user = user;
+      this.token = token;
+      this.refreshToken = refreshToken;
+      localStorage.setItem('campus_eats_user', JSON.stringify(user));
+      localStorage.setItem('campus_eats_token', token);
+      localStorage.setItem('campus_eats_refresh_token', refreshToken);
     },
 
     async login(username, pin) {
@@ -32,30 +39,34 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    async updateProfile(updates) {
+    async refreshAccessToken() {
       try {
-        const response = await fetch(`http://localhost:3000/api/auth/update/${this.user.id}`, {
-          method: 'PUT',
+        const response = await fetch('http://localhost:3000/api/auth/refresh', {
+          method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updates)
+          body: JSON.stringify({ refreshToken: this.refreshToken })
         });
 
         if (response.ok) {
           const data = await response.json();
-          this.setUser({ ...this.user, ...updates });
-          return { data, error: null };
-        } else {
-          return { data: null, error: "Eroare la actualizare" };
+          this.token = data.token;
+          localStorage.setItem('campus_eats_token', data.token);
+          return true;
         }
+        return false;
       } catch (error) {
-        return { data: null, error };
+        return false;
       }
     },
 
     logout() {
-      this.user = null
-      localStorage.removeItem('campus_eats_user')
-      sessionStorage.clear()
+      this.user = null;
+      this.token = null;
+      this.refreshToken = null;
+      localStorage.removeItem('campus_eats_user');
+      localStorage.removeItem('campus_eats_token');
+      localStorage.removeItem('campus_eats_refresh_token');
+      sessionStorage.clear();
     }
   }
 })

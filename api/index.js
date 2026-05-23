@@ -3,6 +3,7 @@ import bodyParser from "body-parser";
 import cors from "cors";
 import { createServer } from "http";
 import { WebSocketServer } from "ws";
+import { authMiddleware } from "./middleware/authMiddleware.js";
 
 import { sequelize } from "./models/index.js";
 
@@ -51,8 +52,8 @@ api.get("/health", async (req, res) => {
 });
 
 api.use("/api/auth", authRoutes);
-api.use("/api/meals", mealRoutes);
-api.use("/api/donations", donationRoutes);
+api.use("/api/meals", authMiddleware, mealRoutes);
+api.use("/api/donations", authMiddleware, donationRoutes);
 
 async function bootstrap() {
   try {

@@ -70,6 +70,7 @@ import Navbar from '@/components/layout/Navbar.vue';
 import { useAuthStore } from "@/stores/auth";
 import { useRequestsStore } from '@/stores/requests';
 import { useCalendarStore } from '@/stores/calendar';
+import { apiFetch } from '@/lib/api.js';
 
 const auth = useAuthStore();
 const requestsStore = useRequestsStore();
@@ -162,8 +163,8 @@ const refreshAllData = async () => {
   if (!auth.user?.id) return;
   try {
     const [logsRes, donsRes] = await Promise.all([
-      fetch(`http://localhost:3000/api/meals/logs?user_id=${auth.user.id}`),
-      fetch('http://localhost:3000/api/donations')
+      apiFetch(`http://localhost:3000/api/meals/logs?user_id=${auth.user.id}`),
+      apiFetch('http://localhost:3000/api/donations')
     ]);
     if (logsRes.ok) logs.value = await logsRes.json();
     if (donsRes.ok) donations.value = await donsRes.json();

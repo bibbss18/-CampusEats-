@@ -82,21 +82,20 @@
 import { ref, computed, onMounted } from 'vue';
 import Navbar from '@/components/layout/Navbar.vue';
 import { useAuthStore } from "@/stores/auth";
+import { apiFetch } from '@/lib/api.js';
 import Swal from 'sweetalert2';
 
 const auth = useAuthStore();
 const donations = ref([]);
 
-// Verificăm dacă are dreptul să doneze (Subscription)
 const hasSubscription = computed(() => {
   const tip = auth.user?.tipbon?.toLowerCase() || '';
   return tip !== 'none' && tip !== '';
 });
 
-// REGLA DE AUR: Fetch date din Backend-ul nostru (MySQL)
 const fetchDonations = async () => {
   try {
-    const res = await fetch('http://localhost:3000/api/donations');
+    const res = await apiFetch('http://localhost:3000/api/donations');
     if (res.ok) {
       donations.value = await res.json();
     }
@@ -105,15 +104,11 @@ const fetchDonations = async () => {
   }
 };
 
-// LOGICA DE RESTRICȚIE (Lunch/Dinner)
 const checkMealRestriction = (targetType) => {
   const target = targetType.toLowerCase();
-  
-  // Verificăm în lista de donații dacă userul are deja ceva pe tipul opus
   const hasOpposite = donations.value.some(d => {
-    const isMe = d.UserId === auth.user.id; // Atenție: UserId din MySQL
+    const isMe = d.StudentId === auth.user.id;
     const type = d.meal_type?.toLowerCase();
-    
     if (isMe) {
       if (target.includes('cin') && type.includes('pranz')) return true;
       if (target.includes('pranz') && type.includes('cin')) return true;
@@ -135,21 +130,17 @@ const checkMealRestriction = (targetType) => {
   return true;
 };
 
-// Gestionare acțiuni (Donate, Request, Claim)
 const handleAction = async (actionType, payload) => {
   const mealType = typeof payload === 'string' ? payload : payload.meal_type;
-
-  // 1. Verificăm restricția Lunch/Dinner
   if (!checkMealRestriction(mealType)) return;
 
-  // 2. Apelăm API-ul nostru conform acțiunii
   let url = 'http://localhost:3000/api/donations';
   let method = 'POST';
   let body = {};
 
   if (actionType === 'donate' || actionType === 'request') {
     body = {
-      UserId: auth.user.id,
+      StudentId: auth.user.id,
       meal_type: mealType,
       status: actionType === 'donate' ? 'available' : 'requested'
     };
@@ -160,9 +151,8 @@ const handleAction = async (actionType, payload) => {
   }
 
   try {
-    const res = await fetch(url, {
-      method: method,
-      headers: { 'Content-Type': 'application/json' },
+    const res = await apiFetch(url, {
+      method,
       body: JSON.stringify(body)
     });
 
@@ -177,14 +167,13 @@ const handleAction = async (actionType, payload) => {
 
 const cancelItem = async (id) => {
   try {
-    const res = await fetch(`http://localhost:3000/api/donations/${id}`, { method: 'DELETE' });
+    const res = await apiFetch(`http://localhost:3000/api/donations/${id}`, { method: 'DELETE' });
     if (res.ok) fetchDonations();
   } catch (err) { console.error(err); }
 };
 
 onMounted(fetchDonations);
 
-// Computeds pentru filtrare interfață
-const myActiveItems = computed(() => donations.value.filter(d => d.UserId === auth.user?.id));
-const filteredMeals = computed(() => donations.value.filter(d => d.UserId !== auth.user?.id && d.status !== 'claimed'));
+const myActiveItems = computed(() => donations.value.filter(d => d.StudentId === auth.user?.id));
+const filteredMeals = computed(() => donations.value.filter(d => d.StudentId !== auth.user?.id && d.status !== 'claimed'));
 </script>
