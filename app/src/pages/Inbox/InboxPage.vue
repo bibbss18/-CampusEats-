@@ -58,6 +58,11 @@ const formatDate = (dateStr) => new Date(dateStr).toLocaleTimeString([], { hour:
 
 onMounted(() => {
   fetchNotifications();
-  setInterval(fetchNotifications, 10000);
+  const ws = new WebSocket('ws://localhost:3000');
+  ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    if (data.type === 'DONATION_UPDATE') fetchNotifications();
+  };
 });
+
 </script>

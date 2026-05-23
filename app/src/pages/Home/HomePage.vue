@@ -174,7 +174,11 @@ const refreshAllData = async () => {
 
 onMounted(() => {
   refreshAllData();
-  setInterval(refreshAllData, 10000);
+  const ws = new WebSocket('ws://localhost:3000');
+  ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    if (data.type === 'DONATION_UPDATE') refreshAllData();
+  };
 });
 
 const getStatus = (dayIndex, type) => {

@@ -1,6 +1,8 @@
 import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
+import { createServer } from "http";
+import { WebSocketServer } from "ws";
 
 import { sequelize } from "./models/index.js";
 
@@ -10,6 +12,23 @@ import donationRoutes from "./routes/donations.js";
 
 const api = express();
 const port = 3000;
+
+const server = createServer(api);
+export const wss = new WebSocketServer({ server });
+
+wss.on("connection", (ws) => {
+  console.log("Client WebSocket conectat");
+  ws.on("close", () => console.log("Client WebSocket deconectat"));
+  ws.onerror = () => console.log("Eroare WebSocket");
+});
+
+export function broadcast(data) {
+  wss.clients.forEach((client) => {
+    if (client.readyState === 1) {
+      client.send(JSON.stringify(data));
+    }
+  });
+}
 
 api.use(cors({
   origin: "http://localhost:5173",
@@ -41,7 +60,7 @@ async function bootstrap() {
     console.log("Conexiune la MySQL reușită (Docker).");
     await sequelize.sync({ alter: true });
     console.log("Modelele au fost sincronizate.");
-    api.listen(port, "0.0.0.0", () => {
+    server.listen(port, "0.0.0.0", () => {
       console.log(`API rulează pe portul ${port}`);
     });
   } catch (error) {
