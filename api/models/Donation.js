@@ -3,5 +3,6 @@ import { sequelize } from '../database/db.js';
 
 export const Donation = sequelize.define('Donation', {
   meal_type: { type: DataTypes.STRING },
-  status: { type: DataTypes.STRING, defaultValue: 'pending' }
+  status: { type: DataTypes.STRING, defaultValue: 'pending' },
+  StudentId: { type: DataTypes.INTEGER }
 });

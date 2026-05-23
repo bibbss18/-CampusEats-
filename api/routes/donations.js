@@ -1,29 +1,42 @@
 import express from 'express';
-import { Donation, User } from '../models/index.js';
+import { Donation, StudentProfile } from '../models/index.js';
 
 const router = express.Router();
 
 router.get('/', async (req, res) => {
-    const donations = await Donation.findAll({ include: User });
-    res.json(donations);
+    try {
+        const donations = await Donation.findAll({ include: StudentProfile });
+        res.json(donations);
+    } catch (error) {
+        res.status(500).json({ error: 'Eroare.' });
+    }
 });
 
-// POST: Creează donație (Bifează 5/5 POST - GATA!)
 router.post('/', async (req, res) => {
-    const donation = await Donation.create(req.body);
-    res.status(201).json(donation);
+    try {
+        const donation = await Donation.create(req.body);
+        res.status(201).json(donation);
+    } catch (error) {
+        res.status(500).json({ error: 'Eroare.' });
+    }
 });
 
-// PUT: Update status (Bifează 5/5 PUT - GATA!)
 router.put('/:id', async (req, res) => {
-    await Donation.update({ status: req.body.status }, { where: { id: req.params.id } });
-    res.json({ message: 'Status actualizat.' });
+    try {
+        await Donation.update({ status: req.body.status }, { where: { id: req.params.id } });
+        res.json({ message: 'Status actualizat.' });
+    } catch (error) {
+        res.status(500).json({ error: 'Eroare.' });
+    }
 });
 
-// DELETE: Anulare donație (Bifează 2/2 DELETE - GATA!)
 router.delete('/:id', async (req, res) => {
-    await Donation.destroy({ where: { id: req.params.id } });
-    res.json({ message: 'Donație anulată.' });
+    try {
+        await Donation.destroy({ where: { id: req.params.id } });
+        res.json({ message: 'Donație anulată.' });
+    } catch (error) {
+        res.status(500).json({ error: 'Eroare.' });
+    }
 });
 
 export default router;

@@ -2,5 +2,7 @@ import { DataTypes } from 'sequelize';
 import { sequelize } from '../database/db.js';
 
 export const StaffProfile = sequelize.define('StaffProfile', {
-  access_level: { type: DataTypes.STRING }
+  staff_id: { type: DataTypes.STRING, unique: true },
+  pin: { type: DataTypes.STRING },
+  nume: { type: DataTypes.STRING }
 });
