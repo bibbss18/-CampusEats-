@@ -1,7 +1,10 @@
 import { useAuthStore } from '@/stores/auth';
+import { API_URL } from '@/config.js';
 
 export const apiFetch = async (url, options = {}) => {
     const auth = useAuthStore();
+    
+    const fullUrl = url.replace('http://localhost:3000', API_URL);
     
     const headers = {
         'Content-Type': 'application/json',
@@ -12,13 +15,13 @@ export const apiFetch = async (url, options = {}) => {
         headers['Authorization'] = `Bearer ${auth.token}`;
     }
 
-    let response = await fetch(url, { ...options, headers });
+    let response = await fetch(fullUrl, { ...options, headers });
 
     if (response.status === 403 && auth.refreshToken) {
         const refreshed = await auth.refreshAccessToken();
         if (refreshed) {
             headers['Authorization'] = `Bearer ${auth.token}`;
-            response = await fetch(url, { ...options, headers });
+            response = await fetch(fullUrl, { ...options, headers });
         } else {
             auth.logout();
             window.location.href = '/';

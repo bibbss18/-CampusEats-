@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { API_URL } from '@/config'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -20,7 +21,7 @@ export const useAuthStore = defineStore('auth', {
 
     async login(username, pin) {
       try {
-        const response = await fetch('http://localhost:3000/api/auth/login', {
+        const response = await fetch(`${API_URL}/api/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, pin })
@@ -41,7 +42,7 @@ export const useAuthStore = defineStore('auth', {
 
     async refreshAccessToken() {
       try {
-        const response = await fetch('http://localhost:3000/api/auth/refresh', {
+        const response = await fetch(`${API_URL}/api/auth/refresh`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ refreshToken: this.refreshToken })
